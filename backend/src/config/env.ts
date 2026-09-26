@@ -1,5 +1,7 @@
 import "dotenv/config";
+
 import { z } from "zod";
+import type { StringValue } from "ms";
 
 const envSchema = z.object({
     PORT: z.coerce.number().default(5000),
@@ -16,9 +18,15 @@ const envSchema = z.object({
 
     JWT_REFRESH_SECRET: z.string().min(32),
 
-    JWT_ACCESS_EXPIRES_IN: z.string().default("15m"),
+    JWT_ACCESS_EXPIRES_IN: z
+        .string()
+        .default("15m")
+        .transform((value) => value as StringValue),
 
-    JWT_REFRESH_EXPIRES_IN: z.string().default("7d"),
+    JWT_REFRESH_EXPIRES_IN: z
+        .string()
+        .default("7d")
+        .transform((value) => value as StringValue),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

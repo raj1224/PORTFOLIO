@@ -6,8 +6,11 @@ import rateLimit from "express-rate-limit";
 
 import { env } from "./config/env.js";
 
-import ApiError from "./utils/ApiError.js";
-import asyncHandler from "./utils/asyncHandler.js";
+import { API_PREFIX } from "./constants/constants.js";
+
+
+
+
 
 import errorMiddleware from "./middlewares/error.middleware.js";
 
@@ -37,24 +40,28 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(cookieParser());
 
-app.get("/api/v1/health", (_req, res) => {
+// import routes
+import authRoutes from "./routes/auth.route.js";
+
+app.get(`${API_PREFIX}/health`, (_req, res) => {
     res.status(200).json({
         success: true,
         message: "Portfolio API is running",
     });
 });
-app.get("/api/v1/test-error", (_req, _res) => {
-    throw new ApiError(400, "This is a test error");
-});
-app.get(
-    "/api/v1/test-async-error",
-    asyncHandler(async () => {
-        throw new ApiError(
-            500,
-            "Async error handled successfully"
-        );
-    })
-);
+app.use(`${API_PREFIX}/auth`, authRoutes);
+// app.get("/api/v1/test-error", (_req, _res) => {
+//     throw new ApiError(400, "This is a test error");
+// });
+// app.get(
+//     "/api/v1/test-async-error",
+//     asyncHandler(async () => {
+//         throw new ApiError(
+//             500,
+//             "Async error handled successfully"
+//         );
+//     })
+// );
 
 /*
 |--------------------------------------------------------------------------
