@@ -1,4 +1,6 @@
 import type { Request, Response } from "express";
+import jwt from "jsonwebtoken";
+import type { JwtPayload } from "../types/auth.types.js";
 
 import User from "../models/user.model.js";
 import ApiError from "../utils/ApiError.js";
@@ -118,4 +120,104 @@ export const loginUser = asyncHandler(
                 )
             );
     }
+);
+
+export const getCurrentUser = asyncHandler(
+  async (req: Request, res: Response) => {
+    if (!req.user) {
+      throw new ApiError(401, "Unauthorized");
+    }
+
+    res.status(200).json(
+      new ApiResponse(
+        200,
+        req.user,
+        "Current user fetched successfully"
+      )
+    );
+  }
+);
+
+export const refreshAccessToken = asyncHandler(
+  async (req: Request, res: Response) => {
+    const incomingRefreshToken = req.cookies?.refreshToken;
+
+    if (!incomingRefreshToken) {
+      throw new ApiError(401, "Refresh token is required");
+    }
+
+    const decoded = jwt.verify(
+      incomingRefreshToken,
+      env.JWT_REFRESH_SECRET
+    ) as JwtPayload;
+
+    const user = await User.findById(decoded.userId);
+
+    if (!user) {
+      throw new ApiError(401, "Invalid refresh token");
+    }
+
+    if (user.refreshToken !== incomingRefreshToken) {
+      throw new ApiError(401, "Refresh token is expired or invalid");
+    }
+
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
+
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    res
+      .status(200)
+      .cookie("accessToken", accessToken, {
+        httpOnly: true,
+        secure: env.NODE_ENV === "production",
+        sameSite: "lax",
+      })
+      .cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: env.NODE_ENV === "production",
+        sameSite: "lax",
+      })
+      .json(
+        new ApiResponse(
+          200,
+          null,
+          "Access token refreshed successfully"
+        )
+      );
+  }
+);
+export const logoutUser = asyncHandler(
+  async (req: Request, res: Response) => {
+    if (!req.user) {
+      throw new ApiError(401, "Unauthorized");
+    }
+
+    await User.findByIdAndUpdate(req.user._id, {
+      $unset: {
+        refreshToken: 1,
+      },
+    });
+
+    res
+      .clearCookie("accessToken", {
+        httpOnly: true,
+        secure: env.NODE_ENV === "production",
+        sameSite: "lax",
+      })
+      .clearCookie("refreshToken", {
+        httpOnly: true,
+        secure: env.NODE_ENV === "production",
+        sameSite: "lax",
+      })
+      .status(200)
+      .json(
+        new ApiResponse(
+          200,
+          null,
+          "Logout successful"
+        )
+      );
+  }
 );

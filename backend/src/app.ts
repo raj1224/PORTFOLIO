@@ -12,6 +12,8 @@ import { API_PREFIX } from "./constants/constants.js";
 
 
 
+
+
 import errorMiddleware from "./middlewares/error.middleware.js";
 
 const app = express();
@@ -42,6 +44,8 @@ app.use(cookieParser());
 
 // import routes
 import authRoutes from "./routes/auth.route.js";
+import profileRoutes from "./routes/profile.routes.js";
+import projectRoutes from "./routes/project.routes.js";
 
 app.get(`${API_PREFIX}/health`, (_req, res) => {
     res.status(200).json({
@@ -50,6 +54,8 @@ app.get(`${API_PREFIX}/health`, (_req, res) => {
     });
 });
 app.use(`${API_PREFIX}/auth`, authRoutes);
+app.use(`${API_PREFIX}/profile`, profileRoutes);
+app.use(`${API_PREFIX}/projects`, projectRoutes);
 // app.get("/api/v1/test-error", (_req, _res) => {
 //     throw new ApiError(400, "This is a test error");
 // });
