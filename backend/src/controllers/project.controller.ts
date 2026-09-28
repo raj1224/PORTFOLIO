@@ -5,6 +5,7 @@ import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
+// Create project
 export const createProject = asyncHandler(
   async (req: Request, res: Response) => {
     const {
@@ -15,6 +16,8 @@ export const createProject = asyncHandler(
       techStack,
       githubUrl,
       liveUrl,
+      images,
+      thumbnail,
       status,
       featured,
       order,
@@ -23,7 +26,10 @@ export const createProject = asyncHandler(
     const existingProject = await Project.findOne({ slug });
 
     if (existingProject) {
-      throw new ApiError(409, "A project with this slug already exists");
+      throw new ApiError(
+        409,
+        "A project with this slug already exists"
+      );
     }
 
     const project = await Project.create({
@@ -34,6 +40,8 @@ export const createProject = asyncHandler(
       techStack,
       githubUrl,
       liveUrl,
+      images,
+      thumbnail,
       status,
       featured,
       order,
@@ -49,11 +57,13 @@ export const createProject = asyncHandler(
   }
 );
 
+// Get published projects - Public
 export const getPublishedProjects = asyncHandler(
   async (_req: Request, res: Response) => {
     const projects = await Project.find({
       status: "published",
     }).sort({
+      featured: -1,
       order: 1,
       createdAt: -1,
     });
@@ -68,12 +78,9 @@ export const getPublishedProjects = asyncHandler(
   }
 );
 
+// Get all projects - Admin
 export const getAllProjects = asyncHandler(
-  async (req: Request, res: Response) => {
-    if (!req.user) {
-      throw new ApiError(401, "Unauthorized");
-    }
-
+  async (_req: Request, res: Response) => {
     const projects = await Project.find().sort({
       order: 1,
       createdAt: -1,
@@ -89,11 +96,15 @@ export const getAllProjects = asyncHandler(
   }
 );
 
+// Get single published project - Public
 export const getProjectBySlug = asyncHandler(
   async (req: Request, res: Response) => {
     const { slug } = req.params;
 
-    const project = await Project.findOne({ slug });
+    const project = await Project.findOne({
+      slug,
+      status: "published",
+    });
 
     if (!project) {
       throw new ApiError(404, "Project not found");
@@ -109,6 +120,7 @@ export const getProjectBySlug = asyncHandler(
   }
 );
 
+// Update project - Admin
 export const updateProject = asyncHandler(
   async (req: Request, res: Response) => {
     const { projectId } = req.params;
@@ -138,6 +150,7 @@ export const updateProject = asyncHandler(
   }
 );
 
+// Delete project - Admin
 export const deleteProject = asyncHandler(
   async (req: Request, res: Response) => {
     const { projectId } = req.params;

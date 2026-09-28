@@ -27,6 +27,8 @@ const envSchema = z.object({
         .string()
         .default("7d")
         .transform((value) => value as StringValue),
+    GITHUB_USERNAME: z.string().min(1),
+    GITHUB_TOKEN: z.string().min(1),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

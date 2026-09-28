@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 export const createProjectSchema = z.object({
+
   title: z
     .string()
     .trim()
@@ -19,7 +20,8 @@ export const createProjectSchema = z.object({
   description: z
     .string()
     .trim()
-    .min(10, "Description must be at least 10 characters"),
+    .min(10, "Description must be at least 10 characters")
+    .max(3000, "Description must not exceed 3000 characters"),
 
   shortDescription: z
     .string()
@@ -45,6 +47,19 @@ export const createProjectSchema = z.object({
     .or(z.literal(""))
     .default(""),
 
+  images: z
+    .array(
+      z.string().trim().url("Invalid image URL")
+    )
+    .default([]),
+
+  thumbnail: z
+    .string()
+    .trim()
+    .url("Invalid thumbnail URL")
+    .or(z.literal(""))
+    .default(""),
+
   status: z
     .enum(["draft", "published", "archived"])
     .default("draft"),
@@ -60,4 +75,5 @@ export const createProjectSchema = z.object({
     .default(0),
 });
 
-export const updateProjectSchema = createProjectSchema.partial();
+export const updateProjectSchema =
+  createProjectSchema.partial();

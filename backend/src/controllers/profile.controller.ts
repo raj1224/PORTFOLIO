@@ -45,12 +45,11 @@ export const updateMyProfile = asyncHandler(
       {
         new: true,
         runValidators: true,
-        upsert: true,
       }
     ).populate("user", "-password -refreshToken");
 
     if (!profile) {
-      throw new ApiError(500, "Failed to update profile");
+      throw new ApiError(404, "Profile not found");
     }
 
     res.status(200).json(

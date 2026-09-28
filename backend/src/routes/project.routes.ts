@@ -23,12 +23,24 @@ import {
 
 const router = Router();
 
-// Public
-// Public
-router.get("/public", getPublishedProjects);
+// Admin
+router.get(
+  "/admin/all",
+  verifyJWT,
+  authorizeRoles("admin"),
+  getAllProjects
+);
 
+// Public
+router.get(
+  "/",
+  getPublishedProjects
+);
 
-router.get("/:slug", getProjectBySlug);
+router.get(
+  "/:slug",
+  getProjectBySlug
+);
 
 // Admin
 router.post(
@@ -37,13 +49,6 @@ router.post(
   authorizeRoles("admin"),
   validate(createProjectSchema),
   createProject
-);
-
-router.get(
-  "/",
-  verifyJWT,
-  authorizeRoles("admin"),
-  getAllProjects
 );
 
 router.patch(
