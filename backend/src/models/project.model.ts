@@ -8,8 +8,17 @@ export interface IProject extends Document {
   techStack: string[];
   githubUrl: string;
   liveUrl: string;
-  images: string[];
-  thumbnail: string;
+
+  images: {
+    url: string;
+    publicId: string;
+  }[];
+
+  thumbnail: {
+    url: string;
+    publicId: string;
+  };
+
   status: "draft" | "published" | "archived";
   featured: boolean;
   order: number;
@@ -62,13 +71,30 @@ const projectSchema = new Schema<IProject>(
     },
 
     images: {
-      type: [String],
+      type: [
+        {
+          url: {
+            type: String,
+            required: true,
+          },
+          publicId: {
+            type: String,
+            required: true,
+          },
+        },
+      ],
       default: [],
     },
 
     thumbnail: {
-      type: String,
-      default: "",
+      url: {
+        type: String,
+        default: "",
+      },
+      publicId: {
+        type: String,
+        default: "",
+      },
     },
 
     status: {

@@ -7,7 +7,12 @@ import {
   getProjectBySlug,
   updateProject,
   deleteProject,
+  uploadProjectImages,
+  uploadProjectThumbnail,
+  deleteProjectImage
 } from "../controllers/project.controller.js";
+
+import upload from "../middlewares/upload.middleware.js";
 
 import verifyJWT, {
   
@@ -64,6 +69,29 @@ router.delete(
   verifyJWT,
   authorizeRoles("admin"),
   deleteProject
+);
+
+router.post(
+  "/:projectId/images",
+  verifyJWT,
+  authorizeRoles("admin"),
+  upload.array("images", 10),
+  uploadProjectImages
+);
+
+router.patch(
+  "/:projectId/thumbnail",
+  verifyJWT,
+  authorizeRoles("admin"),
+  upload.single("thumbnail"),
+  uploadProjectThumbnail
+);
+
+router.delete(
+  "/:projectId/images",
+  verifyJWT,
+  authorizeRoles("admin"),
+  deleteProjectImage
 );
 
 export default router;

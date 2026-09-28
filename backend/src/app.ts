@@ -49,6 +49,7 @@ import projectRoutes from "./routes/project.routes.js";
 import skillRoutes from "./routes/skill.route.js";
 import currentStatusRoutes from "./routes/current-status.route.js";
 import githubRoutes from "./routes/github.route.js";
+import leetcodeRoutes from "./routes/leetcode.routes.js";
 
 app.get(`${API_PREFIX}/health`, (_req, res) => {
     res.status(200).json({
@@ -65,6 +66,10 @@ app.use(
   currentStatusRoutes
 );
 app.use(`${API_PREFIX}/github`, githubRoutes);
+app.use(
+  `${API_PREFIX}/leetcode`,
+  leetcodeRoutes
+);
 // app.get("/api/v1/test-error", (_req, _res) => {
 //     throw new ApiError(400, "This is a test error");
 // });
