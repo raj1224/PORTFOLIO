@@ -2,7 +2,10 @@ import type { Request, Response } from "express";
 import jwt from "jsonwebtoken";
 import type { JwtPayload } from "../types/auth.types.js";
 
+import mongoose from "mongoose";
+
 import User from "../models/user.model.js";
+import Profile from "../models/profile.model.js";
 import ApiError from "../utils/ApiError.js";
 import ApiResponse from "../utils/ApiResponse.js";
 import asyncHandler from "../utils/asyncHandler.js";
@@ -14,51 +17,79 @@ import {
 import { env } from "../config/env.js";
 
 export const registerUser = asyncHandler(
-    async (req: Request, res: Response) => {
-        const {
+  async (req: Request, res: Response) => {
+    const {
+      username,
+      email,
+      password,
+    } = req.body;
+
+    const existingUser = await User.findOne({
+      email,
+    });
+
+    if (existingUser) {
+      throw new ApiError(
+        409,
+        "User with this email already exists"
+      );
+    }
+
+    const session = await mongoose.startSession();
+
+    try {
+      session.startTransaction();
+
+      const users = await User.create(
+        [
+          {
             username,
             email,
             password,
-        } = req.body;
+          },
+        ],
+        { session }
+      );
 
-        // Check if user already exists
-        const existingUser = await User.findOne({
-            email,
-        });
+      const user = users[0];
 
-        if (existingUser) {
-            throw new ApiError(
-                409,
-                "User with this email already exists"
-            );
-        }
+      await Profile.create(
+        [
+          {
+            user: user._id,
+            fullName: username,
+          },
+        ],
+        { session }
+      );
 
-        const user = await User.create({
-    username,
-    email,
-    password,
-});
+      await session.commitTransaction();
 
-        // Don't send password to client
-        const createdUser = await User.findById(
-            user._id
-        ).select("-password -refreshToken");
+      const createdUser = await User.findById(
+        user._id
+      ).select("-password -refreshToken");
 
-        if (!createdUser) {
-            throw new ApiError(
-                500,
-                "Failed to create user"
-            );
-        }
-
-        res.status(201).json(
-            new ApiResponse(
-                201,
-                createdUser,
-                "User registered successfully"
-            )
+      if (!createdUser) {
+        throw new ApiError(
+          500,
+          "Failed to create user"
         );
+      }
+
+      res.status(201).json(
+        new ApiResponse(
+          201,
+          createdUser,
+          "User registered successfully"
+        )
+      );
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      await session.endSession();
     }
+  }
 );
 
 export const loginUser = asyncHandler(

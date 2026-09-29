@@ -118,6 +118,13 @@ const projectSchema = new Schema<IProject>(
   }
 );
 
+projectSchema.index({
+  status: 1,
+  featured: -1,
+  order: 1,
+  createdAt: -1,
+});
+
 const Project = mongoose.model<IProject>("Project", projectSchema);
 
 export default Project;

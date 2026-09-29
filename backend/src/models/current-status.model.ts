@@ -53,9 +53,16 @@ const currentStatusSchema = new Schema<ICurrentStatus>(
   }
 );
 
+currentStatusSchema.index({
+  isVisible: 1,
+  order: 1,
+  createdAt: -1,
+});
+
 const CurrentStatus = mongoose.model<ICurrentStatus>(
   "CurrentStatus",
   currentStatusSchema
 );
+
 
 export default CurrentStatus;

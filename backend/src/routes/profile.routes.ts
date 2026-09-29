@@ -10,7 +10,10 @@ import {
 import verifyJWT from "../middlewares/auth.middleware.js";
 import validate from "../middlewares/validate.middleware.js";
 import { updateProfileSchema } from "../validators/profile.validator.js";
-import upload from "../middlewares/upload.middleware.js";
+import {
+  uploadImage,
+  uploadPdf,
+} from "../middlewares/upload.middleware.js";
 
 
 
@@ -32,14 +35,14 @@ router.patch(
 router.patch(
   "/avatar",
   verifyJWT,
-  upload.single("avatar"),
+  uploadImage.single("avatar"),
   uploadAvatar
 );
 
 router.patch(
   "/resume",
   verifyJWT,
-  upload.single("resume"),
+  uploadPdf.single("resume"),
   uploadResume
 );
 

@@ -44,7 +44,7 @@ export const getVisibleCurrentStatuses = asyncHandler(
     }).sort({
       order: 1,
       createdAt: -1,
-    });
+    }).lean();
 
     res.status(200).json(
       new ApiResponse(
@@ -62,7 +62,7 @@ export const getAllCurrentStatuses = asyncHandler(
     const currentStatuses = await CurrentStatus.find().sort({
       order: 1,
       createdAt: -1,
-    });
+    }).lean();
 
     res.status(200).json(
       new ApiResponse(

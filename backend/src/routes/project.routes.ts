@@ -12,7 +12,10 @@ import {
   deleteProjectImage
 } from "../controllers/project.controller.js";
 
-import upload from "../middlewares/upload.middleware.js";
+import {
+  uploadImage,
+  uploadPdf,
+} from "../middlewares/upload.middleware.js";
 
 import verifyJWT, {
   
@@ -75,7 +78,7 @@ router.post(
   "/:projectId/images",
   verifyJWT,
   authorizeRoles("admin"),
-  upload.array("images", 10),
+  uploadImage.array("images", 10),
   uploadProjectImages
 );
 
@@ -83,7 +86,7 @@ router.patch(
   "/:projectId/thumbnail",
   verifyJWT,
   authorizeRoles("admin"),
-  upload.single("thumbnail"),
+  uploadImage.single("thumbnail"),
   uploadProjectThumbnail
 );
 

@@ -45,6 +45,11 @@ const skillSchema = new Schema<ISkill>(
     timestamps: true,
   }
 );
+skillSchema.index({
+  isVisible: 1,
+  order: 1,
+  createdAt: -1,
+});
 
 const Skill = mongoose.model<ISkill>("Skill", skillSchema);
 

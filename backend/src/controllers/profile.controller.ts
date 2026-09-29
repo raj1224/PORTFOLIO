@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import { uploadToCloudinary } from "../utils/cloudinary.js";
+import { uploadToCloudinary,deleteFromCloudinary } from "../utils/cloudinary.js";
 
 import Profile from "../models/profile.model.js";
 import ApiError from "../utils/ApiError.js";
@@ -73,27 +73,31 @@ export const uploadAvatar = asyncHandler(
       throw new ApiError(400, "Avatar file is required");
     }
 
+    const profile = await Profile.findOne({
+      user: req.user._id,
+    });
+
+    if (!profile) {
+      throw new ApiError(404, "Profile not found");
+    }
+
+    const oldAvatarPublicId = profile.avatar.publicId;
+
     const uploaded = await uploadToCloudinary(
       req.file.buffer,
       "raj-portfolio/profile",
       "image"
     );
 
-    const profile = await Profile.findOneAndUpdate(
-      { user: req.user._id },
-      {
-        $set: {
-          avatar: uploaded.secure_url,
-        },
-      },
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
+    profile.avatar = {
+      url: uploaded.secure_url,
+      publicId: uploaded.public_id,
+    };
 
-    if (!profile) {
-      throw new ApiError(404, "Profile not found");
+    await profile.save();
+
+    if (oldAvatarPublicId) {
+      await deleteFromCloudinary(oldAvatarPublicId, "image");
     }
 
     res.status(200).json(
@@ -116,27 +120,31 @@ export const uploadResume = asyncHandler(
       throw new ApiError(400, "Resume file is required");
     }
 
+    const profile = await Profile.findOne({
+      user: req.user._id,
+    });
+
+    if (!profile) {
+      throw new ApiError(404, "Profile not found");
+    }
+
+    const oldResumePublicId = profile.resumeUrl.publicId;
+
     const uploaded = await uploadToCloudinary(
       req.file.buffer,
       "raj-portfolio/resume",
       "raw"
     );
 
-    const profile = await Profile.findOneAndUpdate(
-      { user: req.user._id },
-      {
-        $set: {
-          resumeUrl: uploaded.secure_url,
-        },
-      },
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
+    profile.resumeUrl = {
+      url: uploaded.secure_url,
+      publicId: uploaded.public_id,
+    };
 
-    if (!profile) {
-      throw new ApiError(404, "Profile not found");
+    await profile.save();
+
+    if (oldResumePublicId) {
+      await deleteFromCloudinary(oldResumePublicId, "raw");
     }
 
     res.status(200).json(

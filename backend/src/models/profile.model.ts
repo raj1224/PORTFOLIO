@@ -11,8 +11,15 @@ export interface IProfile extends Document {
   github: string;
   linkedin: string;
   twitter: string;
-  avatar: string;
-  resumeUrl: string;
+  avatar: {
+  url: string;
+  publicId: string;
+};
+
+resumeUrl: {
+  url: string;
+  publicId: string;
+};
 }
 
 const profileSchema = new Schema<IProfile>(
@@ -80,14 +87,26 @@ const profileSchema = new Schema<IProfile>(
     },
 
     avatar: {
-      type: String,
-      default: "",
-    },
+  url: {
+    type: String,
+    default: "",
+  },
+  publicId: {
+    type: String,
+    default: "",
+  },
+},
 
     resumeUrl: {
-      type: String,
-      default: "",
-    },
+  url: {
+    type: String,
+    default: "",
+  },
+  publicId: {
+    type: String,
+    default: "",
+  },
+},
   },
   {
     timestamps: true,

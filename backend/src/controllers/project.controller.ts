@@ -62,12 +62,14 @@ export const createProject = asyncHandler(
 export const getPublishedProjects = asyncHandler(
   async (_req: Request, res: Response) => {
     const projects = await Project.find({
-      status: "published",
-    }).sort({
-      featured: -1,
-      order: 1,
-      createdAt: -1,
-    });
+  status: "published",
+})
+  .sort({
+    featured: -1,
+    order: 1,
+    createdAt: -1,
+  })
+  .lean();
 
     res.status(200).json(
       new ApiResponse(
@@ -82,10 +84,12 @@ export const getPublishedProjects = asyncHandler(
 // Get all projects - Admin
 export const getAllProjects = asyncHandler(
   async (_req: Request, res: Response) => {
-    const projects = await Project.find().sort({
-      order: 1,
-      createdAt: -1,
-    });
+    const projects = await Project.find()
+  .sort({
+    order: 1,
+    createdAt: -1,
+  })
+  .lean();
 
     res.status(200).json(
       new ApiResponse(
@@ -103,9 +107,9 @@ export const getProjectBySlug = asyncHandler(
     const { slug } = req.params;
 
     const project = await Project.findOne({
-      slug,
-      status: "published",
-    });
+  slug,
+  status: "published",
+}).lean();
 
     if (!project) {
       throw new ApiError(404, "Project not found");
@@ -152,15 +156,46 @@ export const updateProject = asyncHandler(
 );
 
 // Delete project - Admin
+// Delete project - Admin
+
 export const deleteProject = asyncHandler(
   async (req: Request, res: Response) => {
     const { projectId } = req.params;
 
-    const project = await Project.findByIdAndDelete(projectId);
+    const project = await Project.findById(projectId);
 
     if (!project) {
       throw new ApiError(404, "Project not found");
     }
+
+    // Delete project from database
+    await Project.findByIdAndDelete(projectId);
+
+    // Collect all Cloudinary files
+    const cloudinaryFiles = [
+      ...project.images.map((image) => ({
+        publicId: image.publicId,
+        resourceType: "image" as const,
+      })),
+    ];
+
+    // Add thumbnail if it exists
+    if (project.thumbnail.publicId) {
+      cloudinaryFiles.push({
+        publicId: project.thumbnail.publicId,
+        resourceType: "image",
+      });
+    }
+
+    // Delete all project files from Cloudinary
+    await Promise.all(
+      cloudinaryFiles.map((file) =>
+        deleteFromCloudinary(
+          file.publicId,
+          file.resourceType
+        )
+      )
+    );
 
     res.status(200).json(
       new ApiResponse(

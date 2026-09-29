@@ -42,7 +42,7 @@ export const getVisibleSkills = asyncHandler(
     }).sort({
       order: 1,
       createdAt: -1,
-    });
+    }).lean();
 
     res.status(200).json(
       new ApiResponse(
@@ -60,7 +60,7 @@ export const getAllSkills = asyncHandler(
     const skills = await Skill.find().sort({
       order: 1,
       createdAt: -1,
-    });
+    }).lean();
 
     res.status(200).json(
       new ApiResponse(

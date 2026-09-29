@@ -8,13 +8,8 @@ import { env } from "./config/env.js";
 
 import { API_PREFIX } from "./constants/constants.js";
 
-
-
-
-
-
-
 import errorMiddleware from "./middlewares/error.middleware.js";
+import notFoundMiddleware from "./middlewares/not-found.middleware.js";
 
 const app = express();
 
@@ -27,14 +22,29 @@ app.use(
 
 app.use(helmet());
 
-app.use(
-    rateLimit({
-        windowMs: 15 * 60 * 1000,
-        max: 100,
-        standardHeaders: true,
-        legacyHeaders: false,
-    })
-);
+const globalRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 300,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many requests, please try again later",
+  },
+});
+
+const authRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    success: false,
+    message: "Too many authentication attempts, please try again later",
+  },
+});
+
+app.use(globalRateLimiter);
 
 app.use(express.json({ limit: "10kb" }));
 
@@ -57,7 +67,11 @@ app.get(`${API_PREFIX}/health`, (_req, res) => {
         message: "Portfolio API is running",
     });
 });
-app.use(`${API_PREFIX}/auth`, authRoutes);
+app.use(
+  `${API_PREFIX}/auth`,
+  authRateLimiter,
+  authRoutes
+);
 app.use(`${API_PREFIX}/profile`, profileRoutes);
 app.use(`${API_PREFIX}/projects`, projectRoutes);
 app.use(`${API_PREFIX}/skills`, skillRoutes);
@@ -88,6 +102,8 @@ app.use(
 | Global Error Handler
 |--------------------------------------------------------------------------
 */
+
+app.use(notFoundMiddleware);
 
 app.use(errorMiddleware);
 

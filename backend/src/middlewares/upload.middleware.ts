@@ -2,36 +2,63 @@ import multer from "multer";
 
 const storage = multer.memoryStorage();
 
-const fileFilter: multer.Options["fileFilter"] = (
+const imageFileFilter: multer.Options["fileFilter"] = (
   _req,
   file,
   callback
 ) => {
-  const allowedTypes = [
+  const allowedImageTypes = [
     "image/jpeg",
     "image/png",
     "image/webp",
-    "application/pdf",
   ];
 
-  if (!allowedTypes.includes(file.mimetype)) {
+  if (!allowedImageTypes.includes(file.mimetype)) {
     callback(
       new Error(
-        "Only JPEG, PNG, WebP images and PDF files are allowed"
+        "Only JPEG, PNG and WebP images are allowed"
       )
     );
+
     return;
   }
 
   callback(null, true);
 };
 
-const upload = multer({
+const pdfFileFilter: multer.Options["fileFilter"] = (
+  _req,
+  file,
+  callback
+) => {
+  if (file.mimetype !== "application/pdf") {
+    callback(
+      new Error("Only PDF files are allowed")
+    );
+
+    return;
+  }
+
+  callback(null, true);
+};
+
+const uploadImage = multer({
   storage,
-  fileFilter,
+  fileFilter: imageFileFilter,
   limits: {
     fileSize: 5 * 1024 * 1024,
   },
 });
 
-export default upload;
+const uploadPdf = multer({
+  storage,
+  fileFilter: pdfFileFilter,
+  limits: {
+    fileSize: 5 * 1024 * 1024,
+  },
+});
+
+export {
+  uploadImage,
+  uploadPdf,
+};
