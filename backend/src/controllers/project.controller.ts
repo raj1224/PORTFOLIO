@@ -232,9 +232,9 @@ export const uploadProjectImages = asyncHandler(
       )
     );
 
-    const imageUrls = uploadedImages.map(
-      (image) => image.secure_url
-    );
+    // const imageUrls = uploadedImages.map(
+    //   (image) => image.secure_url
+    // );
 
     project.images.push(
   ...uploadedImages.map((image) => ({

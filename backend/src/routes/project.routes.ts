@@ -14,7 +14,7 @@ import {
 
 import {
   uploadImage,
-  uploadPdf,
+  
 } from "../middlewares/upload.middleware.js";
 
 import verifyJWT, {
