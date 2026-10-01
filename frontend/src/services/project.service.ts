@@ -14,3 +14,8 @@ export const getProjectBySlug = async (
 
   return response.data.data;
 };
+
+export const getAllProjects = async (): Promise<Project[]> => {
+  const response = await api.get("/projects/admin/all");
+  return response.data.data;
+};
