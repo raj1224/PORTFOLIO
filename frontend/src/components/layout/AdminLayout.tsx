@@ -1,6 +1,5 @@
 import {
   BarChart3,
-  Code2,
   FolderKanban,
   LayoutDashboard,
   LogOut,
@@ -10,17 +9,24 @@ import {
   X,
 } from "lucide-react";
 
-import { NavLink, Outlet } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuth";
+
+import {
+  NavLink,
+  Outlet,
+  useNavigate,
+} from "react-router-dom";
 
 interface AdminLayoutProps {
   darkMode: boolean;
-  onLogout?: () => void;
 }
 
 const AdminLayout = ({
   darkMode,
-  onLogout,
 }: AdminLayoutProps) => {
+  const { logout, user } = useAuth();
+  const navigate = useNavigate();
+
   const sidebarClass = darkMode
     ? "border-white/10 bg-[#090c14]"
     : "border-slate-200 bg-white";
@@ -61,6 +67,16 @@ const AdminLayout = ({
       icon: UserRound,
     },
   ];
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } finally {
+      navigate("/admin/login", {
+        replace: true,
+      });
+    }
+  };
 
   return (
     <div
@@ -130,7 +146,6 @@ const AdminLayout = ({
                   }
                 >
                   <Icon size={18} />
-
                   <span>{item.label}</span>
                 </NavLink>
               );
@@ -171,7 +186,7 @@ const AdminLayout = ({
         >
           <button
             type="button"
-            onClick={onLogout}
+            onClick={handleLogout}
             className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition ${
               darkMode
                 ? "text-slate-400 hover:bg-red-500/10 hover:text-red-400"
@@ -179,7 +194,6 @@ const AdminLayout = ({
             }`}
           >
             <LogOut size={18} />
-
             <span>Logout</span>
           </button>
         </div>
@@ -219,7 +233,7 @@ const AdminLayout = ({
               <p
                 className={`text-xs font-semibold ${textPrimary}`}
               >
-                Administrator
+                {user?.username || "Administrator"}
               </p>
 
               <p
@@ -230,7 +244,11 @@ const AdminLayout = ({
             </div>
 
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600 text-xs font-bold text-white">
-              RK
+              {user?.username
+                ? user.username
+                    .slice(0, 2)
+                    .toUpperCase()
+                : "RK"}
             </div>
           </div>
         </header>

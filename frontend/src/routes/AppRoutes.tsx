@@ -4,14 +4,22 @@ import {
   Routes,
 } from "react-router-dom";
 
-// Public
-import Hero from "../components/home/Hero";
+// Public pages
+import Home from "../components/home/Hero";
 import Projects from "../components/home/Project";
 
 // Admin
-import AdminLayout from "../components/layout/AdminLayout";
+import AdminLogin from "../pages/admin/Login";
 import AdminDashboard from "../pages/admin/Dashboard";
 import AdminCurrentStatus from "../pages/admin/CurrentStatus";
+
+import AdminProjects from "../pages/admin/AdminProjects";
+
+// Layout
+import AdminLayout from "../components/layout/AdminLayout";
+
+// Auth protection
+import ProtectedAdminRoute from "../components/auth/ProtectedAdminRoute";
 
 interface AppRoutesProps {
   darkMode: boolean;
@@ -24,14 +32,15 @@ const AppRoutes = ({
 }: AppRoutesProps) => {
   return (
     <Routes>
-      {/* =====================================
-          PUBLIC
-      ===================================== */}
+
+      {/* =========================
+          PUBLIC ROUTES
+      ========================== */}
 
       <Route
         path="/"
         element={
-          <Hero
+          <Home
             darkMode={darkMode}
           />
         }
@@ -46,49 +55,70 @@ const AppRoutes = ({
         }
       />
 
-      {/* =====================================
-          ADMIN
-      ===================================== */}
+
+      {/* =========================
+          ADMIN LOGIN
+      ========================== */}
 
       <Route
-        path="/admin"
-        element={
-          <AdminLayout
-            darkMode={true}
+        path="/admin/login"
+        element={<AdminLogin />}
+      />
+
+
+      {/* =========================
+          PROTECTED ADMIN ROUTES
+      ========================== */}
+
+      <Route element={<ProtectedAdminRoute />}>
+
+        <Route
+          path="/admin"
+          element={
+            <AdminLayout
+              darkMode={true}
+            />
+          }
+        >
+
+          {/* /admin → /admin/dashboard */}
+          <Route
+            index
+            element={
+              <Navigate
+                to="dashboard"
+                replace
+              />
+            }
           />
-        }
-      >
-        {/* /admin */}
 
-        <Route
-          index
-          element={
-            <AdminDashboard />
-          }
-        />
+          {/* Dashboard */}
+          <Route
+            path="dashboard"
+            element={<AdminDashboard />}
+          />
 
-        {/* /admin/dashboard */}
+          <Route
+  path="projects"
+  element={<AdminProjects />}
+/>
 
-        <Route
-          path="dashboard"
-          element={
-            <AdminDashboard />
-          }
-        />
+          {/* Current Status */}
+          <Route
+            path="current-status"
+            element={
+              <AdminCurrentStatus />
+            }
+          />
 
-        {/* /admin/current-status */}
+        </Route>
 
-        <Route
-          path="current-status"
-          element={
-            <AdminCurrentStatus />
-          }
-        />
       </Route>
 
-      {/* =====================================
-          FALLBACK
-      ===================================== */}
+
+      {/* =========================
+          UNKNOWN ROUTES
+      ========================== */}
 
       <Route
         path="*"
@@ -99,6 +129,7 @@ const AppRoutes = ({
           />
         }
       />
+
     </Routes>
   );
 };
