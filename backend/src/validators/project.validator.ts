@@ -47,19 +47,6 @@ export const createProjectSchema = z.object({
     .or(z.literal(""))
     .default(""),
 
-  images: z
-    .array(
-      z.string().trim().url("Invalid image URL")
-    )
-    .default([]),
-
-  thumbnail: z
-    .string()
-    .trim()
-    .url("Invalid thumbnail URL")
-    .or(z.literal(""))
-    .default(""),
-
   status: z
     .enum(["draft", "published", "archived"])
     .default("draft"),

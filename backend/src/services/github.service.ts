@@ -1,5 +1,8 @@
-const GITHUB_API_URL = "https://api.github.com";
 import { env } from "../config/env.js";
+
+const GITHUB_API_URL = "https://api.github.com";
+const REQUEST_TIMEOUT_MS = 10_000;
+const CACHE_TTL_MS = 5 * 60 * 1000;
 
 interface GitHubUser {
   login: string;
@@ -26,136 +29,55 @@ interface GitHubRepository {
   updated_at: string;
 }
 
-export const getGitHubProfile = async (
-  username: string
-): Promise<GitHubUser> => {
-  const response = await fetch(
-    `${GITHUB_API_URL}/users/${username}`,
-    {
-      headers: {
-        Accept: "application/vnd.github+json",
-        "User-Agent": "raj-portfolio",
-      },
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(
-      `GitHub profile request failed: ${response.status}`
-    );
-  }
-
-  return response.json() as Promise<GitHubUser>;
-};
-
-export const getGitHubRepositories = async (
-  username: string
-): Promise<GitHubRepository[]> => {
-  const response = await fetch(
-    `${GITHUB_API_URL}/users/${username}/repos?sort=updated&per_page=100`,
-    {
-      headers: {
-        Accept: "application/vnd.github+json",
-        "User-Agent": "raj-portfolio",
-      },
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(
-      `GitHub repositories request failed: ${response.status}`
-    );
-  }
-
-  return response.json() as Promise<GitHubRepository[]>;
-};
-
-interface GitHubContributionDay {
-  date: string;
-  contributionCount: number;
-}
-
-interface GitHubContributionWeek {
-  contributionDays: GitHubContributionDay[];
-}
+interface GitHubContributionDay { date: string; contributionCount: number; }
+interface GitHubContributionWeek { contributionDays: GitHubContributionDay[]; }
 
 interface GitHubContributionsResponse {
-  data: {
-    user: {
-      contributionsCollection: {
-        contributionCalendar: {
-          totalContributions: number;
-          weeks: GitHubContributionWeek[];
-        };
-      };
-    };
-  };
+  data?: { user?: { contributionsCollection: { contributionCalendar: { totalContributions: number; weeks: GitHubContributionWeek[] } } | null } | null };
+  errors?: Array<{ message: string }>;
 }
 
-export const getGitHubContributions = async (
-  username: string
-): Promise<{
-  totalContributions: number;
-  weeks: GitHubContributionWeek[];
-}> => {
-  const query = `
-    query ($username: String!) {
-      user(login: $username) {
-        contributionsCollection {
-          contributionCalendar {
-            totalContributions
-            weeks {
-              contributionDays {
-                date
-                contributionCount
-              }
-            }
-          }
-        }
-      }
-    }
-  `;
+const cache = new Map<string, { expiresAt: number; value: unknown }>();
 
-  const response = await fetch(
-    "https://api.github.com/graphql",
-    {
-      method: "POST",
-
-      headers: {
-        Accept: "application/vnd.github+json",
-        Authorization: `Bearer ${env.GITHUB_TOKEN}`,
-        "Content-Type": "application/json",
-        "User-Agent": "raj-portfolio",
-      },
-
-      body: JSON.stringify({
-        query,
-        variables: {
-          username,
-        },
-      }),
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(
-      `GitHub GraphQL request failed: ${response.status}`
-    );
-  }
-
-  const result =
-    (await response.json()) as GitHubContributionsResponse;
-
-  if (!result.data?.user) {
-    throw new Error("GitHub user not found");
-  }
-
-  const calendar =
-    result.data.user.contributionsCollection
-      .contributionCalendar;
-
-  return {
-    totalContributions: calendar.totalContributions,
-    weeks: calendar.weeks,
-  };
+const cached = async <T>(key: string, loader: () => Promise<T>): Promise<T> => {
+  const entry = cache.get(key);
+  if (entry && entry.expiresAt > Date.now()) return entry.value as T;
+  const value = await loader();
+  cache.set(key, { expiresAt: Date.now() + CACHE_TTL_MS, value });
+  return value;
 };
+
+const githubFetch = async (url: string, init: RequestInit = {}) => {
+  const response = await fetch(url, {
+    ...init,
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    headers: {
+      Accept: "application/vnd.github+json",
+      "User-Agent": "raj-portfolio",
+      ...init.headers,
+    },
+  });
+  if (!response.ok) throw new Error(`GitHub request failed: ${response.status}`);
+  return response;
+};
+
+export const getGitHubProfile = (username: string): Promise<GitHubUser> =>
+  cached(`github:profile:${username}`, async () => (await githubFetch(`${GITHUB_API_URL}/users/${username}`)).json() as Promise<GitHubUser>);
+
+export const getGitHubRepositories = (username: string): Promise<GitHubRepository[]> =>
+  cached(`github:repos:${username}`, async () => (await githubFetch(`${GITHUB_API_URL}/users/${username}/repos?sort=updated&per_page=100`)).json() as Promise<GitHubRepository[]>);
+
+export const getGitHubContributions = (username: string) =>
+  cached(`github:contributions:${username}`, async () => {
+    const query = `query ($username: String!) { user(login: $username) { contributionsCollection { contributionCalendar { totalContributions weeks { contributionDays { date contributionCount } } } } } }`;
+    const response = await githubFetch("https://api.github.com/graphql", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${env.GITHUB_TOKEN}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ query, variables: { username } }),
+    });
+    const result = (await response.json()) as GitHubContributionsResponse;
+    if (result.errors?.length) throw new Error(`GitHub GraphQL request failed: ${result.errors[0].message}`);
+    const calendar = result.data?.user?.contributionsCollection?.contributionCalendar;
+    if (!calendar) throw new Error("GitHub user not found");
+    return { totalContributions: calendar.totalContributions, weeks: calendar.weeks };
+  });

@@ -1,24 +1,3 @@
-import { useState } from "react";
-
-import AppRoutes from "./routes/AppRoutes";
-
-function App() {
-  const [darkMode, setDarkMode] = useState(true);
-
-  return (
-    <div
-      className={
-        darkMode
-          ? "min-h-screen bg-[#070a12] text-white"
-          : "min-h-screen bg-white text-slate-950"
-      }
-    >
-      <AppRoutes
-        darkMode={darkMode}
-        setDarkMode={setDarkMode}
-      />
-    </div>
-  );
-}
-
-export default App;
+import {BrowserRouter,Routes,Route,Navigate} from "react-router-dom";import {useEffect,useState} from "react";import Navbar from "./components/public/Navbar";import Footer from "./components/public/Footer";import PortfolioHome from "./components/public/PortfolioHome";import Projects from "./pages/Projects";import ProjectDetail from "./pages/ProjectDetail";import Login from "./pages/admin/Login";import Protected from "./components/admin/Protected";import AdminShell from "./components/admin/AdminShell";import Dashboard from "./pages/admin/Dashboard";import AdminProjects from "./pages/admin/Projects";import Skills from "./pages/admin/Skills";import CurrentStatus from "./pages/admin/CurrentStatus";import Profile from "./pages/admin/Profile";
+function Public({dark,setDark}:{dark:boolean;setDark:(v:boolean)=>void}){return <><Navbar dark={dark} setDark={setDark}/><Routes><Route path="/" element={<PortfolioHome/>}/><Route path="/projects" element={<Projects/>}/><Route path="/projects/:slug" element={<ProjectDetail/>}/><Route path="*" element={<Navigate to="/" replace/>}/></Routes><Footer/></>}
+export default function App(){const [dark,setDark]=useState(true);useEffect(()=>{document.body.classList.toggle("light",!dark)},[dark]);return <BrowserRouter><Routes><Route path="/admin/login" element={<Login/>}/><Route element={<Protected/>}><Route path="/admin" element={<AdminShell/>}><Route index element={<Navigate to="dashboard" replace/>}/><Route path="dashboard" element={<Dashboard/>}/><Route path="projects" element={<AdminProjects/>}/><Route path="skills" element={<Skills/>}/><Route path="current-status" element={<CurrentStatus/>}/><Route path="profile" element={<Profile/>}/></Route></Route><Route path="/*" element={<Public dark={dark} setDark={setDark}/>}/></Routes></BrowserRouter>}

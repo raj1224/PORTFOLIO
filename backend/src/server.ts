@@ -1,43 +1,46 @@
 import app from "./app.js";
 import { env } from "./config/env.js";
 import { connectDB } from "./config/db.js";
+import mongoose from "mongoose";
 
 const startServer = async () => {
-  try {
-    await connectDB();
+  await connectDB();
 
-    const server = app.listen(env.PORT, () => {
-      console.log(`Server running on port ${env.PORT}`);
+  const server = app.listen(env.PORT, () => {
+    console.log(`Server running on port ${env.PORT}`);
+  });
+
+  let isShuttingDown = false;
+
+  const shutdown = (signal: string) => {
+    if (isShuttingDown) return;
+    isShuttingDown = true;
+    console.log(`${signal} received. Shutting down server...`);
+
+    server.close(async () => {
+      await mongoose.connection.close();
+      console.log("HTTP server and MongoDB connection closed");
+      process.exit(0);
     });
 
-    const shutdown = (signal: string) => {
-      console.log(`${signal} received. Shutting down server...`);
+    setTimeout(() => process.exit(1), 10_000).unref();
+  };
 
-      server.close(() => {
-        console.log("HTTP server closed");
-        process.exit(0);
-      });
-    };
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
 
-    process.on("SIGTERM", () => shutdown("SIGTERM"));
-    process.on("SIGINT", () => shutdown("SIGINT"));
+  process.on("uncaughtException", (error) => {
+    console.error("Uncaught Exception:", error);
+    shutdown("uncaughtException");
+  });
 
-    process.on("uncaughtException", (error) => {
-      console.error("Uncaught Exception:", error);
-      process.exit(1);
-    });
-
-    process.on("unhandledRejection", (error) => {
-      console.error("Unhandled Rejection:", error);
-
-      server.close(() => {
-        process.exit(1);
-      });
-    });
-  } catch (error) {
-    console.error("Failed to start server:", error);
-    process.exit(1);
-  }
+  process.on("unhandledRejection", (error) => {
+    console.error("Unhandled Rejection:", error);
+    shutdown("unhandledRejection");
+  });
 };
 
-startServer();
+startServer().catch((error) => {
+  console.error("Failed to start server:", error);
+  process.exit(1);
+});

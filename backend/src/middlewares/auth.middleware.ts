@@ -1,87 +1,49 @@
 import type { RequestHandler } from "express";
-
 import jwt from "jsonwebtoken";
-
 import { env } from "../config/env.js";
-
 import ApiError from "../utils/ApiError.js";
-
 import User from "../models/user.model.js";
-
 import asyncHandler from "../utils/asyncHandler.js";
-
 import type { JwtPayload } from "../types/auth.types.js";
 
-const verifyJWT: RequestHandler = asyncHandler(
-    async (req, _res, next) => {
+const getAccessToken = (req: Parameters<RequestHandler>[0]): string | undefined => {
+  if (req.cookies?.accessToken) return req.cookies.accessToken;
 
-        const token =
-            req.cookies?.accessToken ||
-            req.headers.authorization?.replace(
-                "Bearer ",
-                ""
-            );
+  const authorization = req.headers.authorization;
+  if (authorization?.startsWith("Bearer ")) return authorization.slice(7).trim();
+  return undefined;
+};
 
-        if (!token) {
-            throw new ApiError(
-                401,
-                "Access token is required"
-            );
-        }
+const verifyJWT: RequestHandler = asyncHandler(async (req, _res, next) => {
+  const token = getAccessToken(req);
+  if (!token) throw new ApiError(401, "Access token is required");
 
-        let decoded: JwtPayload;
+  let decoded: JwtPayload;
+  try {
+    decoded = jwt.verify(token, env.JWT_ACCESS_SECRET) as JwtPayload;
+  } catch {
+    throw new ApiError(401, "Invalid or expired access token");
+  }
 
-        try {
-            decoded = jwt.verify(
-                token,
-                env.JWT_ACCESS_SECRET
-            ) as JwtPayload;
-        } catch {
-            throw new ApiError(
-                401,
-                "Invalid or expired access token"
-            );
-        }
+  if (!decoded?.userId || typeof decoded.userId !== "string") {
+    throw new ApiError(401, "Invalid access token");
+  }
 
-        const user = await User.findById(
-            decoded.userId
-        ).select("-password -refreshToken");
+  const user = await User.findById(decoded.userId).select("-password -refreshToken");
+  if (!user) throw new ApiError(401, "Invalid access token");
 
-        if (!user) {
-            throw new ApiError(
-                401,
-                "Invalid access token"
-            );
-        }
+  req.user = user;
+  next();
+});
 
-        req.user = user;
-
-        next();
+export const authorizeRoles = (...allowedRoles: Array<"admin" | "user">): RequestHandler => {
+  return (req, _res, next) => {
+    if (!req.user) throw new ApiError(401, "Unauthorized");
+    if (!allowedRoles.includes(req.user.role)) {
+      throw new ApiError(403, "You do not have permission to perform this action");
     }
-);
-
-export const authorizeRoles = (
-    ...allowedRoles: Array<"admin" | "user">
-): RequestHandler => {
-
-    return (req, _res, next) => {
-
-        if (!req.user) {
-            throw new ApiError(
-                401,
-                "Unauthorized"
-            );
-        }
-
-        if (!allowedRoles.includes(req.user.role)) {
-            throw new ApiError(
-                403,
-                "You do not have permission to perform this action"
-            );
-        }
-
-        next();
-    };
+    next();
+  };
 };
 
 export default verifyJWT;

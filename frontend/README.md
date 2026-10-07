@@ -1,75 +1,59 @@
-# React + TypeScript + Vite
+# Raj Portfolio Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Production-oriented React + TypeScript frontend wired to the supplied Portfolio API.
 
-Currently, two official plugins are available:
+## Stack
+- React 19 + TypeScript
+- Vite
+- React Router
+- TanStack Query
+- Axios with cookie credentials + automatic access-token refresh
+- Tailwind CSS v4
+- Lucide React
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+## Run
+```bash
+cp .env.example .env
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://npmx.dev/package/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://npmx.dev/package/eslint-plugin-react-dom) for React-specific lint rules:
+Default frontend: `http://localhost:5173`
+Backend API: `http://localhost:8000/api/v1`
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Admin
+Open `/admin/login` and sign in with the admin account created by the backend.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Protected admin sections:
+- `/admin/dashboard`
+- `/admin/projects`
+- `/admin/skills`
+- `/admin/current-status`
+- `/admin/profile`
 
-```
+## API mapping
+Public:
+- GET `/projects`
+- GET `/projects/:slug`
+- GET `/skills`
+- GET `/current-status`
+- GET `/github/profile`
+- GET `/github/repos`
+- GET `/github/contributions`
+- GET `/leetcode/dashboard`
+
+Admin:
+- Auth login/current-user/refresh/logout
+- Project CRUD + thumbnail/screenshots
+- Skill CRUD
+- Current-status CRUD
+- Profile update + avatar/resume upload
+
+## Auth behavior
+The frontend sends cookies with every request. If an authenticated request returns 401, Axios attempts `/auth/refresh-token` once and retries the original request. `/auth/current-user` returning 401 before login is treated as an unauthenticated session and does not break the UI.
+
+## Backend limitation handled by the frontend
+The supplied backend currently exposes `/profile/me` only as an authenticated route. Therefore public Home content does not depend on that private endpoint; public projects, skills, current-status, GitHub and LeetCode use their actual public API endpoints. Contact uses a mailto flow because the supplied backend has no contact-message endpoint.
+
+## Important
+Do not put GitHub tokens, JWT secrets, Cloudinary secrets or other backend secrets in this frontend `.env`. Only `VITE_*` values belong here.
